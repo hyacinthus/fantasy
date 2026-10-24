@@ -441,7 +441,7 @@ func toGooglePrompt(prompt fantasy.Prompt, isVertexAI bool) (*genai.Content, []*
 						Text: text.Text,
 					}
 					if currentReasoningMetadata != nil {
-						geminiPart.ThoughtSignature = []byte(currentReasoningMetadata.Signature)
+						geminiPart.ThoughtSignature = decodeSignature(currentReasoningMetadata.Signature)
 						currentReasoningMetadata = nil
 					}
 					parts = append(parts, geminiPart)
@@ -469,7 +469,7 @@ func toGooglePrompt(prompt fantasy.Prompt, isVertexAI bool) (*genai.Content, []*
 						geminiPart.FunctionCall.ID = ""
 					}
 					if currentReasoningMetadata != nil {
-						geminiPart.ThoughtSignature = []byte(currentReasoningMetadata.Signature)
+						geminiPart.ThoughtSignature = decodeSignature(currentReasoningMetadata.Signature)
 						currentReasoningMetadata = nil
 					}
 					parts = append(parts, geminiPart)
@@ -700,7 +700,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 								if isActiveReasoning {
 									isActiveReasoning = false
 									metadata := &ReasoningMetadata{
-										Signature: string(part.ThoughtSignature),
+										Signature: encodeSignature(part.ThoughtSignature),
 									}
 									if !yield(fantasy.StreamPart{
 										Type: fantasy.StreamPartTypeReasoningEnd,
@@ -713,7 +713,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 									}
 								} else if part.ThoughtSignature != nil {
 									metadata := &ReasoningMetadata{
-										Signature: string(part.ThoughtSignature),
+										Signature: encodeSignature(part.ThoughtSignature),
 									}
 
 									if !yield(fantasy.StreamPart{
@@ -759,7 +759,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 						if isActiveReasoning {
 							isActiveReasoning = false
 							metadata := &ReasoningMetadata{
-								Signature: string(part.ThoughtSignature),
+								Signature: encodeSignature(part.ThoughtSignature),
 								ToolID:    toolCallID,
 							}
 							if !yield(fantasy.StreamPart{
@@ -773,7 +773,7 @@ func (g *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 							}
 						} else if part.ThoughtSignature != nil {
 							metadata := &ReasoningMetadata{
-								Signature: string(part.ThoughtSignature),
+								Signature: encodeSignature(part.ThoughtSignature),
 								ToolID:    toolCallID,
 							}
 
@@ -1350,7 +1350,7 @@ func (g languageModel) mapResponse(response *genai.GenerateContentResponse, warn
 				reasoningContent := fantasy.ReasoningContent{Text: part.Text}
 				if part.ThoughtSignature != nil {
 					metadata := &ReasoningMetadata{
-						Signature: string(part.ThoughtSignature),
+						Signature: encodeSignature(part.ThoughtSignature),
 					}
 					reasoningContent.ProviderMetadata = fantasy.ProviderMetadata{
 						Name: metadata,
@@ -1361,7 +1361,7 @@ func (g languageModel) mapResponse(response *genai.GenerateContentResponse, warn
 				foundReasoning := false
 				if part.ThoughtSignature != nil {
 					metadata := &ReasoningMetadata{
-						Signature: string(part.ThoughtSignature),
+						Signature: encodeSignature(part.ThoughtSignature),
 					}
 					// find the last reasoning content and add the signature
 					for i := len(content) - 1; i >= 0; i-- {
@@ -1401,7 +1401,7 @@ func (g languageModel) mapResponse(response *genai.GenerateContentResponse, warn
 			foundReasoning := false
 			if part.ThoughtSignature != nil {
 				metadata := &ReasoningMetadata{
-					Signature: string(part.ThoughtSignature),
+					Signature: encodeSignature(part.ThoughtSignature),
 					ToolID:    toolCallID,
 				}
 				// find the last reasoning content and add the signature
