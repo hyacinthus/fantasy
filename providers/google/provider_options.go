@@ -2,6 +2,7 @@
 package google
 
 import (
+	"encoding/base64"
 	"encoding/json"
 
 	"charm.land/fantasy"
@@ -53,12 +54,28 @@ type ThinkingConfig struct {
 
 // ReasoningMetadata represents reasoning metadata for the Google provider.
 type ReasoningMetadata struct {
+	// Signature is the thought signature, base64-encoded as the Gemini REST
+	// API and OpenRouter carry it. The raw bytes are binary and would not
+	// survive JSON.
 	Signature string `json:"signature"`
 	ToolID    string `json:"tool_id"`
 }
 
 // Options implements the ProviderOptionsData interface for ReasoningMetadata.
 func (m *ReasoningMetadata) Options() {}
+
+func encodeSignature(raw []byte) string {
+	return base64.StdEncoding.EncodeToString(raw)
+}
+
+// decodeSignature returns the signature bytes. A signature stored raw by
+// an older version is not valid base64 and passes through unchanged.
+func decodeSignature(signature string) []byte {
+	if raw, err := base64.StdEncoding.DecodeString(signature); err == nil {
+		return raw
+	}
+	return []byte(signature)
+}
 
 // MarshalJSON implements custom JSON marshaling with type info for ReasoningMetadata.
 func (m ReasoningMetadata) MarshalJSON() ([]byte, error) {
